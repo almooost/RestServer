@@ -67,23 +67,7 @@
       $this->reset();
       if(!isset($this->dbh))
         $this->dbh = new \PDO($this->s_dns, $this->s_username, $this->s_password, array(\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION)); 
-      /*
-      WHY THE FUCK DOESNT THIS WORKING?????
-      try
-      {
-        $this->dbh = new \PDO($this->s_dns."DD", $this->s_username, $this->s_password, array(\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION));
-        echo "ASDFASDFASDFASDFASDFASFASFDASdf";
-      }
-      catch(PDOException $e)
-      {
-        echo "3452345324532452345345234534";
-      var_dump($e->getTrace());
 
-      }
-      finally{
-        echo "exceptionalkdflk";
-      }
-      */
       
     }
 

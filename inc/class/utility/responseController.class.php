@@ -48,11 +48,11 @@ class responseController
   {
     if(!is_array($this->h_data) || $this->s_content_type == "")
       $this->errorResponse();
-    $this->s_payload = json_encode($this->h_data);
+    if(is_array($this->h_data))
+      $this->formatData();
 
     $a_response = array($this->h_codes[$this->i_status_code]);
     $this->sendResponse($a_response);
-    
   }
 
   /**
@@ -74,10 +74,12 @@ class responseController
    */
   public function sendResponse($a_response)
   {
-    foreach ($a_response as $i_key => $s_value) 
-      header($s_value);
+    foreach ($a_response as $i_key => $s_value)
+    {
+      header($s_value, false, $this->i_status_code);
+    }
     header("Content-Type:".$this->s_content_type);
-    $this->formatData();
+    if(is_string($this->s_payload))
       echo($this->s_payload);
     exit(1);
   }
