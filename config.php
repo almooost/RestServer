@@ -9,7 +9,7 @@ $config = array(
             "database" => "api",
             "username" => "user",
             "password" => "password",
-            "host" => "localhost"
+            "host" => "127.0.0.1"
         )
     ),
     "urls" => array(

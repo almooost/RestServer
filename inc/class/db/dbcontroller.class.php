@@ -30,18 +30,19 @@
      */
     private function __construct($h_connection_info)
     {
-     $this->s_username = $h_connection_info["username"];
-     $this->s_password = $h_connection_info["password"];
-     $this->s_database = $h_connection_info["database"];
-     $this->s_host     = $h_connection_info["host"];
-     $this->i_port = 3306;
-     $this->s_dns = "mysql:host=".$this->s_host.";dbname=".$this->s_database.";port=".$this->i_port.";charset=utf8";
-     $this->a_status   = array('status'  => 0,
+
+      $this->s_username = $h_connection_info["username"];
+      $this->s_password = $h_connection_info["password"];
+      $this->s_database = $h_connection_info["database"];
+      $this->s_host     = $h_connection_info["host"];
+      $this->i_port = 3306;
+      $this->s_dns = "mysql:host=".$this->s_host.";dbname=".$this->s_database.";port=".$this->i_port.";charset=utf8";
+      $this->a_status   = array('status'  => 0,
                                 'data'    => array(),
                                 'id'      => -1,
                                 'msg'     => "");
 
-        $this->dbh = new \PDO($this->s_dns, $this->s_username, $this->s_password, array(\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION));
+      $this->dbh = new \PDO($this->s_dns, $this->s_username, $this->s_password, array(\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION));
 
     }
 
@@ -86,7 +87,7 @@
      */
     private function reset()
     {
-      $this->a_status   = array('status'  => 0,
+      $this->a_status   = array('status'  => -1,
                                 'data'    => array(),
                                 'id'      => -1,
                                 'msg'     => "");
@@ -96,7 +97,7 @@
      * Fetch results from DB in Assoc form
      * @return array Associative array (key => value)
      */
-    public function fetchAssoc($s_query, $s_status = "data")
+    public function fetchAssoc($s_query)
     {
       error_log($s_query);
       try
@@ -117,7 +118,7 @@
       finally
       {
         $this->closeConnection();
-        return $this->a_status[$s_status];
+        return $this->a_status;
       }
 
     }
@@ -126,7 +127,7 @@
      * Fetch results in numeric order
      * @return array Numeric array
      */
-    public function fetchNum($s_query, $s_status = "data")
+    public function fetchNum($s_query)
     {
       try
       {
@@ -142,7 +143,7 @@
       finally
       {
         $this->closeConnection();
-        return $this->a_status[$s_status];
+        return $this->a_status;
       }
 
     }
@@ -151,7 +152,7 @@
      * Fetch Results in objects
      * @return array Array of Objects ($object->attribute)
      */
-    public function fetchObj($s_query, $s_status = "data")
+    public function fetchObj($s_query)
     {
       try
       {
@@ -167,7 +168,7 @@
       finally
       {
         $this->closeConnection();
-        return $this->a_status[$s_status];
+        return $this->a_status;
       }
 
     }
@@ -176,7 +177,7 @@
      * Delete an entry from the database
      * @return 
      */
-    public function delete($s_query, $s_status = "data")
+    public function delete($s_query)
     {
       try
       {
@@ -191,7 +192,7 @@
       finally
       {
         $this->closeConnection();
-        return $this->a_status[$s_status];
+        return $this->a_status;
       }
 
     }
@@ -201,7 +202,7 @@
      * @param string  SQL Query
      * @param string  Expected return status
      */
-    public function insert($s_query, $s_status = "data")
+    public function insert($s_query)
     {
       try
       {
@@ -216,7 +217,7 @@
       finally
       {
         $this->closeConnection();
-        return $this->a_status[$s_status];
+        return $this->a_status;
       }
 
     }
@@ -226,7 +227,7 @@
      * @param string  SQL Query
      * @param string  Expected return value
      */
-    public function update($s_query, $s_status = "data")
+    public function update($s_query)
     {
       try
       {
@@ -241,7 +242,7 @@
       finally
       {
         $this->closeConnection();
-        return $this->a_status[$s_status];
+        return $this->a_status;
       }
 
     }
@@ -251,7 +252,7 @@
      * @param numeric array   [query,query,..]
      * @param string          expected return value
      */
-    public function transaction($a_querys, $s_status = "data")
+    public function transaction($a_querys)
     {
       try
       {
@@ -272,7 +273,7 @@
       finally
       {
         $this->closeConnection();
-        return $this->a_status[$s_status];
+        return $this->a_status;
       }
 
     }
@@ -298,7 +299,7 @@
      */
     public function getStatus($s_status = "status")
     {
-      return $this->a_status[$s_status];
+      return $this->a_status;
     }
   }
 

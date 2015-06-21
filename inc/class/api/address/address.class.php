@@ -11,9 +11,6 @@ namespace api\address;
 class Address 
 {
 
-  private $obj_entity;
-  private $obj_collection;
-
   
   /**
    * Takes a mixed variable and returns the appropiate object for it
@@ -21,46 +18,68 @@ class Address
    * ID = Single Address
    * @param Hash $request Assoc Array of Request
    */
-  public function __construct($request)
+  public function __construct()
   {
-    if(preg_match('/^(\w+)$/', $request->getPath()))
-      $this->fetchAll($request->getPath());
-    else
-      $this->fetchOne($request->getPath());
-  }
-
-
-  public function fetchAll($s_parent_tree)
-  {
-    $obj_collection =  new \api\address\AddressCollection($s_parent_tree);
-    return $obj_collection;
-  }
-
-  public function fetchOne($i_id)
-  {
-    $obj_entity = new \api\address\AddressEntity($i_id);
-    return $obj_entity;
   }
 
   /**
-   * Formats the Object that it is represented by a specific type
-   * @param  string $s_type Return Type
-   * @return String mixed type
+   * Public Method for fetching an Address
+   * @param  string|int $m_id Mixed Value String|Int
+   * @return void
    */
-  public function format($s_type = "json")
+  public static function read($request)
   {
-    $a_rtn = array();
-    foreach ($this as $key => $value) 
-    {
-      array_push($a_rtn, $value);
-    }
-
-    if($s_type == "json")
-      return json_encode($a_rtn, JSON_PRETTY_PRINT);
-    else if ($s_type == "xml")
-      return \utility\XML::encodeObj($this);
+    if(preg_match('/^(\w+)$/', $request->getPath()))
+      $this->readAll($request->getPath());
     else
-      return $a_rtn;
+      $this->readOne($request->getPath());
+  }
+
+  /**
+   * Read all addresses from a given parent tre
+   * @param  String $s_group_tree Parent Tree (Group)
+   * @return AddressCollection Object   Addresses in given Group
+   */
+  private static function readAll($s_group_tree)
+  {
+    return new \api\address\AddressCollection($s_group_tree);
+  }
+
+  /**
+   * Read a single Address
+   * @param  int $i_id Address id
+   * @return AddressEntity Object
+   */
+  private static function readOne($i_id)
+  {
+    return new \api\address\AddressEntity($i_id);
+  }
+
+  public static function create($h_data)
+  {
+    if(is_array($h_data) && count($h_data) >= 1)
+      if(!isset($h_data['AddressGroup']))
+        return \api\address\AddressEntity::create($h_data);
+      else
+        return \api\address\AddressCollection::create($h_data);
+  }
+
+  public static function update($h_data)
+  {
+    if(is_array($h_data) && count($h_data) >= 1)
+      if(!isset($h_data['AddressGroup']))
+        return \api\address\AddressEntity::update($h_data, $h_data['AddressGroupID']);
+      else
+        return \api\address\AddressCollection::update($h_data, $h_data['AddressGroupID']);
+  }
+
+  public static function remove($m_value)
+  {
+    if(is_array($m_value) && count($m_value) >= 1)
+      if(!isset($m_value['AddressGroup']))
+        return \api\address\AddressEntity::remove($m_value);
+      else
+        return \api\address\AddressCollection::remove($m_value);
   }
 
 }

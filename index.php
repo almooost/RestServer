@@ -20,11 +20,16 @@ if($request->isValid() && $auth->isAuth())
 {
   if(preg_match('/^(\/address)/',$request->getPath("full")) )
   {
-    $obj_address = new api\address\Address($request);
+    $_POST['data'] = json_encode(array("AddressGroupID" => 1));
+    if($request->getMethod() == "GET")
+      $obj_address = api\address\Address::read($request);
+    else if ($request->getMethod() == "PUT")
+      $obj_address = api\address\Address::create(json_decode(file_get_contents("php://input"), true) );
+    else if ($request->getMethod() == "POST")
+      $obj_address = api\address\Address::update(json_decode($_POST['data'],true));
+    else if ($request->getMethod() == "DELETE")
+      $obj_address = api\address\Address::remove(json_decode(file_get_contents("php://input"), true));
   }
-  //echo $request->format("json");
-  //error_log(json_encode($request,JSON_PRETTY_PRINT));
-  //error_log(json_encode(serialize($request)));
 }
 else
 {

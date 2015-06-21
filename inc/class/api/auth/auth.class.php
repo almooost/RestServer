@@ -41,10 +41,10 @@ class Auth
     {
       $s_query = "SELECT `p_id`, `p_password` FROM `permissions` WHERE `p_username` = '".addslashes($this->s_username)."'";
       $h_sqlres = $db->fetchAssoc($s_query);
-      if(isset($h_sqlres[0]['p_password']) && $this->s_password === $h_sqlres[0]['p_password'])
+      if(isset($h_sqlres['data'][0]['p_password']) && $this->s_password === $h_sqlres['data'][0]['p_password'])
       {
         $this->b_auth = true;
-        $this->i_id = $h_sqlres[0]['p_id'];
+        $this->i_id = $h_sqlres['data'][0]['p_id'];
       }
       else
         $obj_response = new \utility\responseController(array("Error" => "Authentication failed"), 405);
@@ -68,6 +68,7 @@ class Auth
    */
   public function updatePassword($s_new_password)
   {
+    global $db;
     if($this->b_auth && isset($s_new_password) && isset($this->i_id))
     {
       $s_query = "UPDATE `permissions` SET `p_password` = ".addslashes($s_new_password)." WHERE `p_id` = ".addslashes($this->i_id);
