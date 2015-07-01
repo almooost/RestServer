@@ -71,6 +71,23 @@ class requestController
     return $this->h_request;
   }
 
+  public function getPayload()
+  {
+    if($this->s_method == "GET")
+      return $_GET;
+    else if($this->s_method == "POST" || $this->s_method == "PUT" || $this->s_method == "DELETE")
+    {
+      parse_str(file_get_contents("php://input"),$data);
+      return (array)$data;
+    }
+    else
+      return false;
+  }
+
+  /**
+   * Check if request has a valid method and path
+   * @return boolean TRUE|FALSE
+   */
   public function isValid()
   {
     if($this->b_auth 
@@ -78,27 +95,6 @@ class requestController
       && isset($this->a_path) && $this->a_path != '')
       return true;
     return false;
-  }
-
-  /**
-   * Formats the Object that it is represented by a specific type
-   * @param  string $s_type Return Type
-   * @return String mixed type
-   */
-  public function format($s_type = "json")
-  {
-    $a_rtn = array();
-    foreach ($this as $key => $value) 
-    {
-      array_push($a_rtn, $value);
-    }
-
-    if($s_type == "json")
-      return json_encode($a_rtn, JSON_PRETTY_PRINT);
-    else if ($s_type == "xml")
-      return \utility\XML::encodeObj($this);
-    else
-      return $a_rtn;
   }
 
 }

@@ -31,15 +31,15 @@ class responseController
    * @param hash $h_response_array All provided response data
    * @param string $s_content_type      needed Content Type
    */
-  public function __construct($h_response_array, $i_status_code = 404, $s_content_type = "text/json")
+  public function __construct($h_response_array, $i_status_code = 404)
   {
+    global $request;
     $this->h_data         = $h_response_array;
     $this->s_payload      = "";
     $this->i_status_code  = $i_status_code;
-    $this->s_content_type = $s_content_type;
+    $this->s_content_type = (is_a($request,'requestController') && $request->getRequest('CONTENT_TYPE')) ? $request->getRequest('CONTENT_TYPE') : "application/json";
     $this->createResponse();
   }
-
 
   /**
    * Create response from data
@@ -86,11 +86,11 @@ class responseController
 
   public function formatData()
   {
-    if(isset($this->s_content_type) && preg_match('/^(text\/json|xml)$/', $this->s_content_type))
+    if(isset($this->s_content_type) && preg_match('/(application\/(json|xml))/', $this->s_content_type))
     {
-      if(preg_match('/^(text\/json)$/', $this->s_content_type))
+      if(preg_match('/(application\/json)/', $this->s_content_type))
         $this->s_payload = json_encode($this->h_data,JSON_FORCE_OBJECT);
-      else if(preg_match('/^(text\/xml)$/', $this->s_content_type)) 
+      else if(preg_match('/(application\/xml)/', $this->s_content_type)) 
         $this->s_payload = \utility\XML::encodeObj($this->h_data);
     }
     else

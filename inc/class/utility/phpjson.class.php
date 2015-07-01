@@ -43,8 +43,8 @@ class phpJSON
     {
       if(count($m_data) >= 1 && is_int(key($m_data)))
         $this->h_php = $m_data;
-      else if(preg_match('/^[\w\d\_\-]+$/'))
-        array_push($this->h_php, $m_data));
+      else if(preg_match('/^[\w\d\_\-]+$/', $m_data))
+        array_push($this->h_php, $m_data);
       else
         $this->h_php = $m_data;
 

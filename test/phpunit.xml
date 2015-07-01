@@ -1,4 +1,29 @@
 <phpunit 
   bootstrap="bootstrap.php" 
   backupGlobals="false">
+  <testsuites>
+    <testsuite name="All">
+      <directory>./</directory>
+      <file>addressCollectionTest.class.php</file>
+      <file>addressEntityTest.class.php</file>
+      
+      <file>cURLAuthTest.class.php</file>
+      <file>cURLAddrCollectionTest.class.php</file>
+      <file>cURLAddrEntityTest.class.php</file>
+    </testsuite>
+    
+    <testsuite name="Addresses">
+      <directory>./</directory>
+      <file>addressCollectionTest.class.php</file>
+      <file>addressEntityTest.class.php</file>
+    </testsuite>
+
+    <testsuite name="API">
+      <directory>./</directory>
+      <file>cURLAuthTest.class.php</file>
+      <file>cURLAddrCollectionTest.class.php</file>
+      <file>cURLAddrEntityTest.class.php</file>
+    </testsuite>
+
+  </testsuites>
 </phpunit>

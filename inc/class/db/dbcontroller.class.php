@@ -99,7 +99,6 @@
      */
     public function fetchAssoc($s_query)
     {
-      error_log($s_query);
       try
       {
         $this->openConnection();

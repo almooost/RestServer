@@ -11,8 +11,9 @@ namespace api\address;
 class AddressEntity implements \interfaces\Response
 {
   private $b_status;
-  private $a_address_data;
-  private $h_rtn_data;
+  private $h_address_data;
+  private $h_rtn_data = array("status" => -1,
+                              "data"   => "");
   private static $h_address_keys = array("addr_id"       => "AddressID",
                                         "addr_g_id"     => "AddressGroupID",
                                         "addr_title"    => "Title", 
@@ -30,14 +31,14 @@ class AddressEntity implements \interfaces\Response
    * Create a new single Address object
    * @param hash $h_data Hash array of address information
    */
-  public function __construct($h_data)
+  public function __construct($h_data = array())
   {
     $this->b_status = false;
-    $this->a_address_data = null;
+    if(is_array($h_data))
+      $this->h_address_data = $h_data;
+    else
+      $this->h_address_data = null;
     $this->h_rtn_data = array();
-
-    if($h_data != -1 && is_array($h_data))
-      $this->a_address_data = $h_data;
   }
 
 
@@ -45,109 +46,172 @@ class AddressEntity implements \interfaces\Response
    * Get DB matching fields
    * @return hash Address fileds `column` => API Name
    */
-  public function getDBFields()
+  public static function getDBFields($s_values = "all")
   {
-    return self::$h_address_keys;
+    if($s_values == 'keys')
+      return array_keys(self::$h_address_keys);
+    else if($s_values == 'values')
+      return array_values(self::$h_address_keys);
+    else
+      return self::$h_address_keys;
   }
 
   /**
    * Read an exisint entry from the DB
-   * @param  hash $h_search Hash Array of sarch criterias
-   * @return hash           AddressEntity | false
+   * @param  hash $s_search_value Searching value
+   * @param  hash $s_search_attr  Searching attribute
+   * @return hash                 AddressEntity | false
    */
-  public static function read($h_search)
+  public function read($s_search_value, $s_search_attr = "AddressID")
   {
     global $db;
     $s_addr_query = "";
-
-    if(isset($h_data['search_value']) && preg_match('/^([\w\d\_\-]+)$/', $h_search['search_value'])
-      && isset($h_data['search_attr']) && array_search($h_search['search_attr'], self::$h_address_keys) )
-      $s_addr_query = "`".addslashes(array_search(trim($h_search['search_attr']), self::$h_address_keys ))."` " 
-                     ." LIKE '%".addslashes(trim($h_search['search_value']))."%'";
-    if($s_addr_query == "")
+    if($s_search_value == '' || !array_search($s_search_attr, self::getDBFields()))
       return false;
 
-    $s_query = "SELECT `".explode('`, `')array_keys(self::$h_address_keys)."` FROM `addresses` "
-              ." WHERE ".addslashes($s_addr_query);
+    if(preg_match('/^(\d+)$/', $s_search_value) && $s_search_attr == "AddressID")
+      $s_addr_query = "addr_id = ".addslashes(trim($s_search_value));
+
+    else if(preg_match('/^([\w\d\_\-\s]+)$/', $s_search_value) )
+      $s_addr_query = "`".addslashes(array_search(trim($s_search_attr), self::getDBFields()) )."` LIKE '%".addslashes(trim($s_search_value))."%'";
+    else
+      return false;
+
+    $s_query = "SELECT `".implode('`, `',self::getDBFields('keys'))."` FROM `addresses` "
+              ." WHERE `addr_status` = 1 AND ".$s_addr_query;
+    
     $h_sqlres = $db->fetchAssoc($s_query);
-    if($h_sqlres['status'] != -1 && is_array($h_sqlres['data']))
-      return new AddressEntity($h_sqlres['data']);
+    //var_dump($h_sqlres);
+    if($h_sqlres['status'] == 1 && count($h_sqlres['data']) >= 1)
+    {
+      $a_address_entities = array();
+      if(is_int(key($h_sqlres['data'])))
+      {
+        foreach ($h_sqlres['data'] as $m_key => $m_value)
+        {
+          if(is_array($m_value))
+            array_push($a_address_entities,new \api\address\AddressEntity($m_value));
+        }
+        $obj_addr_collection = new \api\address\AddressCollection($a_address_entities);
+        $obj_addr_collection->toArray();
+        $obj_addr_collection->finalize(200);
+      }
+      else
+      {
+        $obj_addr_entity =  new \api\address\AddressEntity($h_sqlres);
+        $obj_addr_entity->toArray();
+        $obj_addr_entity->finalize(200);
+      }
+      return true;
+    }
     return false;
   }
 
   /**
    * Create new address by an given array
-   * @param  hash $h_addresses Hash Array of addresses]
    * @param  int $i_group_id  AddressGroupID
    * @return boolean              TRUE|FALSE
    */
-  public function create($h_addresses, $i_group_id)
+  public function create()
   {
     global $db;
-    if(!is_array($h_addresses) || count($h_addresses) < 1 )
+    //var_dump($this->h_address_data);
+    if(is_null($this->h_address_data) || count($this->h_address_data) < 1 )
       return false;
 
-    $a_query_data = dbPrepare($h_addresses, $i_group_id);
-    
+    $a_query_data = $this->dbPrepare("create");
+    //var_dump($a_query_data);
     if(!is_array($a_query_data) || count($a_query_data) < 1)
       return false;
 
-    $s_query = "";
-    foreach ($a_query_data as $i_key => $a_addr_data) 
-      $s_query .= "INSERT INTO `addresses` (`".explode(',`',array_keys($a_addr_data))."`) VALUES('".addslashes(explode(',\'',array_values($a_addr_data)))."')";
+    if(is_int(key($a_query_data)))
+    {
+      $s_query = "";
+      foreach ($a_query_data as $i_key => $a_addr_data) 
+        $s_query .= "INSERT INTO `addresses` (`".implode('`,`',array_keys($a_addr_data))."`) VALUES('".implode('\',\'',array_values($a_addr_data))."')";
+    }
+    else
+      $s_query = "INSERT INTO `addresses` (`".implode('`,`',array_keys($a_query_data))."`) VALUES('".implode('\',\'',array_values($a_query_data))."')";
     $h_sqlres = $db->insert($s_query);
     if($h_sqlres['status'] == 1)
-      return true;
+    {
+      $this->h_rtn_data['status'] = 1;
+      $this->h_rtn_data['data'] = $h_sqlres['id'];
+      return $this->h_rtn_data;
+    }
     return false;
   }
 
   /**
    * Disable a specific address by its id
-   * @param  int $i_addr_id     ID of address
+   * @param  hash $h_addr_id    Hash Array of ID ['AddressID']
    * @return boolean            TRUE|FALSE
    */
-  public static function remove($i_addr_id)
+  public function remove($h_addr_id)
   {
     global $db;
-    if(!preg_match('/^(\d+)$/', $i_addr_id) && $i_addr_id < 1)
+    if(!is_array($h_addr_id) || !isset($h_addr_id['AddressID']) || !preg_match('/^(\d+)$/', $h_addr_id['AddressID']) || $h_addr_id['AddressID'] < 1)
       return false;
 
-    $s_query = "UPDATE `addresses` SET `addr_status` = -1 WHERE `addr_id` = ".addslashes(trim($i_addr_id));
+    $s_query = "UPDATE `addresses` SET `addr_status` = -1 WHERE `addr_id` = ".addslashes(trim($h_addr_id['AddressID']));
     $h_sqlres = $db->update($s_query);
     if($h_sqlres['status'] == 1)
+    {
+      $this->h_rtn_data['status'] = 1;
+      $this->h_rtn_data['data'] = $h_sqlres['id'];
       return true;
+    }
+    return false;
   }
 
   /**
    * Update an existig address in the DB
-   * @param  hash $h_addresses  Hash Array with address data
    * @param  int $i_id          ID of updated element
    * @return boolean            TRUE|FALSE
    */
-  public static function update($h_addresses, $i_id)
+  public function update()
   {
     global $db;
-    if(!preg_match('/^(\d+)$/', $i_id))
+    if(isset($this->h_address_data['AddressID']) &&!preg_match('/^(\d+)$/', $this->h_address_data['AddressID']))
       return false;
-    if(!is_array($h_addresses) || count($h_addresses) < 1)
+    if(!is_array($this->h_address_data) || count($this->h_address_data) < 1)
       return false;
-    $a_query_data = self::dbPrepare($h_addresses);
+    $a_query_data = self::dbPrepare("update");
 
     if(!is_array($a_query_data) || count($a_query_data) < 1)
       return false;
 
-    $s_query = "";
-    foreach ($a_query_data as $i_key => $a_addr_data) 
+    // Check if there are multiple addresses to update
+    if(is_int(key($a_query_data)))
     {
-      $s_addr_query = array_walk($a_addr_data, function(&$s_value, $s_key)
-        {
-          $s_value = "`".$s_key."` = '".$s_value."'";
-        });
-      $s_query .= "UPDATE `addresses` SET ".explode(',',$a_addr_data)." WHERE `addr_id` = ".addslashes($i_id)."; ".PHP_EOL;
+      $s_query = "";
+      foreach ($a_query_data as $i_key => $a_addr_data) 
+      {
+        $s_addr_query = array_walk($a_addr_data, function(&$s_value, $s_key)
+          {
+            $s_value = "`".$s_key."` = '".$s_value."'";
+          });
+        $s_query .= "UPDATE `addresses` SET ".implode(',',$a_addr_data)." WHERE ".$a_query_data['addr_id']."; ".PHP_EOL;
+      }
+    }
+    // Update single address
+    else
+    {
+      $s_addr_query = array_walk($a_query_data, function(&$s_value, $s_key)
+      {
+        $s_value = "`".$s_key."` = '".$s_value."'";
+      });
+      if(!isset($a_query_data['addr_id']))
+        return false;
+      $s_query = "UPDATE `addresses` SET ".implode(',',$a_query_data)." WHERE ".$a_query_data['addr_id']."; ".PHP_EOL;
     }
     $h_sqlres = $db->update($s_query);
     if($h_sqlres['status'] == 1)
+    {
+      $this->h_rtn_data['status'] = 1;
+      $this->h_rtn_data['data'] = $h_sqlres['id'];
       return true;
+    }
 
     return false;
     
@@ -155,32 +219,63 @@ class AddressEntity implements \interfaces\Response
 
   /**
    * Prepare data and match to DB colums
-   * @param  hash $h_addresses Given addresses
+   * @param  hash $this->h_address_data Given addresses
    * @param  int  $i_group_id  AddressGroupID Default: null
    * @return hash              Hash Array(DB_Column_name => Value)
    */
-  public static function dbPrepare($h_addresses, $i_group_id = null)
+  public function dbPrepare($s_prepare_type = "create", $i_group_id = null)
   {
+    $i_group_id = (!is_null($i_group_id) && is_int($i_group_id)) ? $i_group_id : null;
     $a_query_data = array();
-    if(is_int(key($h_addresses)))
+    // Check if there are multiple addresses
+    if(is_int(key($this->h_address_data)))
     {
-      foreach ($h_addresses as $i_key => $h_address) 
+      foreach ($this->h_address_data as $i_key => $h_address) 
       {
         $a_query_data[$i_key] = array();
-        foreach (self::$h_address_keys as $s_column => $s_value) 
+        foreach (self::getDBFields() as $s_db_column => $s_readable_attr) 
         {
-          if(isset($h_addresses[$s_value]))
+          if(isset($this->h_address_data[$s_readable_attr]))
           {
-            if($s_value == "AddressID")
-              $a_query_data[$i_key][$s_column] = "NULL";
-            else if ($i_group_id != null && $s_value == "AddressGroupID")
-              $a_query_data[$i_key][$s_column] = $i_group_id;
+            // Match readable attributes
+            if($s_prepare_type == "create" && $s_readable_attr == "AddressID")
+              continue;
+
+            else if ($i_group_id != null && $s_readable_attr == "AddressGroupID")
+              $a_query_data[$i_key][$s_db_column] = $i_group_id;
             else
-              $a_query_data[$i_key][$s_column] = $h_addresses[$s_value];
+              $a_query_data[$i_key][$s_db_column] = $this->h_address_data[$s_readable_attr];
             continue;
           }
           else
-            $a_query_data[$i_key][$s_column] =  "";
+            if(!isset($a_query_data[$i_key][$s_db_column]))
+              $a_query_data[$i_key][$s_db_column] =  "";
+        }
+      }
+    }
+    // prepare for single address
+    else
+    {
+      foreach (self::getDBFields() as $s_db_column => $s_readable_attr) 
+      {
+        foreach ($this->h_address_data as $s_attr => $s_addr_value) 
+        {
+          // Match readable attributes
+          if($s_readable_attr == $s_attr)
+          {
+            if($s_prepare_type == "create" && $s_readable_attr == "AddressID")
+              continue;
+            else if ($i_group_id != null && $s_readable_attr == "AddressGroupID")
+              $a_query_data[$s_db_column] = $i_group_id;
+            else
+              $a_query_data[$s_db_column] = $s_addr_value;
+            continue;
+          }
+          else
+            if($s_readable_attr == "AddressID")
+              continue;
+            else if(!isset($a_query_data[$s_db_column]))
+              $a_query_data[$s_db_column] =  "";
         }
       }
     }
@@ -194,10 +289,10 @@ class AddressEntity implements \interfaces\Response
   public function toArray()
   {
     $i_counter = 0;
-    if(isset($this->a_address_data) && is_array($this->a_address_data))
-      foreach ($this->a_address_data as $m_key => $m_value)
+    if(isset($this->h_address_data) && is_array($this->h_address_data))
+      foreach ($this->h_address_data as $m_key => $m_value)
       {
-        foreach (self::$h_address_keys as $s_key => $s_value) 
+        foreach (self::getDBFields() as $s_key => $s_value) 
           if($m_key == $s_key && is_string($s_value))
             $this->h_rtn_data[$s_value] = $m_value;
         $i_counter++;
